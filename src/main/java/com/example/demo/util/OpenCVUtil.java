@@ -4,6 +4,8 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
+import java.io.File;
+
 public class OpenCVUtil {
     
     private static boolean initialized = false;
@@ -19,21 +21,60 @@ public class OpenCVUtil {
             System.out.println("\n========================================");
             System.out.println("Loading OpenCV on: " + os);
             System.out.println("========================================");
+            System.out.println("Java Library Path: " + System.getProperty("java.library.path"));
             
             boolean success = false;
             
             if (os.contains("linux")) {
-                try {
-                    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-                    System.out.println("✅ OpenCV loaded from system library");
-                    success = true;
-                } catch (UnsatisfiedLinkError e) {
-                    System.err.println("System library load failed: " + e.getMessage());
+                // Try different possible locations for OpenCV
+                String[] libPaths = {
+                    "/usr/lib/libopencv_java4120.so",
+                    "/usr/lib/x86_64-linux-gnu/libopencv_java.so",
+                    "/usr/lib/x86_64-linux-gnu/libopencv_java4120.so",
+                    "/usr/lib/jni/libopencv_java.so",
+                    "/usr/local/lib/libopencv_java4120.so",
+                    "/usr/lib/libopencv_java.so",
+                    "/usr/share/java/opencv4/libopencv_java4120.so"
+                };
+                
+                for (String path : libPaths) {
+                    File libFile = new File(path);
+                    if (libFile.exists()) {
+                        System.out.println("Found OpenCV at: " + path);
+                        try {
+                            System.load(path);
+                            System.out.println("✅ OpenCV loaded from: " + path);
+                            success = true;
+                            break;
+                        } catch (UnsatisfiedLinkError e) {
+                            System.err.println("Failed to load from " + path + ": " + e.getMessage());
+                        }
+                    }
+                }
+                
+                if (!success) {
+                    try {
+                        System.loadLibrary("opencv_java4120");
+                        System.out.println("✅ OpenCV loaded via System.loadLibrary");
+                        success = true;
+                    } catch (UnsatisfiedLinkError e) {
+                        System.err.println("System.loadLibrary (opencv_java4120) failed: " + e.getMessage());
+                    }
+                }
+                
+                if (!success) {
+                    try {
+                        System.loadLibrary("opencv_java");
+                        System.out.println("✅ OpenCV loaded via System.loadLibrary (opencv_java)");
+                        success = true;
+                    } catch (UnsatisfiedLinkError e) {
+                        System.err.println("System.loadLibrary (opencv_java) failed: " + e.getMessage());
+                    }
                 }
             } else if (os.contains("win")) {
                 String userDir = System.getProperty("user.dir");
                 String dllPath = userDir + "\\opencv_java4120.dll";
-                java.io.File dllFile = new java.io.File(dllPath);
+                File dllFile = new File(dllPath);
                 if (dllFile.exists()) {
                     System.load(dllPath);
                     System.out.println("✅ OpenCV loaded from: " + dllPath);
@@ -47,7 +88,7 @@ public class OpenCVUtil {
                     System.out.println("✅ OpenCV loaded from system library");
                     success = true;
                 } catch (UnsatisfiedLinkError e) {
-                    System.err.println("System library load failed: " + e.getMessage());
+                    System.err.println("Failed to load OpenCV: " + e.getMessage());
                 }
             }
             
@@ -57,6 +98,16 @@ public class OpenCVUtil {
                 System.out.println("🎉 OpenCV Version: " + version);
             } else {
                 System.err.println("❌ Failed to load OpenCV");
+                System.err.println("Listing /usr/lib directory...");
+                File libDir = new File("/usr/lib");
+                if (libDir.exists()) {
+                    String[] files = libDir.list();
+                    for (String file : files) {
+                        if (file.contains("opencv")) {
+                            System.err.println("  Found: " + file);
+                        }
+                    }
+                }
             }
             System.out.println("========================================\n");
             
