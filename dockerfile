@@ -1,5 +1,5 @@
-# Build stage
-FROM maven:3.8.4-openjdk-17-slim AS build
+# Use Eclipse Temurin JDK 17 as base
+FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
 # Install OpenCV dependencies
@@ -9,18 +9,25 @@ RUN apt-get update && apt-get install -y \
     libopencv-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pom.xml and download dependencies
+# Copy Maven wrapper and pom.xml
+COPY mvnw .
+COPY .mvn .mvn
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+
+# Make mvnw executable
+RUN chmod +x mvnw
+
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN mvn clean package -DskipTests
+RUN ./mvnw clean package -DskipTests
 
 # Run stage
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # Install OpenCV runtime
@@ -31,7 +38,7 @@ RUN apt-get update && apt-get install -y \
 # Copy the built jar
 COPY --from=build /app/target/sketchimage-1.0.0.jar app.jar
 
-# Create directories for uploads
+# Create directories
 RUN mkdir -p /tmp/uploads /tmp/outputs
 
 # Expose port
