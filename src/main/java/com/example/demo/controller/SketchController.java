@@ -181,5 +181,13 @@ public class SketchController {
             response.put("message", e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
+        @GetMapping("/health")
+public ResponseEntity<Map<String, String>> health() {
+    Map<String, String> response = new HashMap<>();
+    response.put("status", "UP");
+    response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+    response.put("port", System.getProperty("server.port", "8080"));
+    return ResponseEntity.ok(response);
+}
     }
 }
