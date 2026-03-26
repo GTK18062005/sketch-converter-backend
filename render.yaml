@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: sketch-converter-backend
+    runtime: image
+    repo: https://github.com/GTK18062005/sketch-converter-backend
+    plan: free
+    dockerCommand: |
+      apt-get update
+      apt-get install -y openjdk-17-jdk maven libopencv-dev
+      mvn clean package
+      java -Djava.library.path=/usr/lib -jar target/sketchimage-1.0.0.jar
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: RENDER
+        value: true
